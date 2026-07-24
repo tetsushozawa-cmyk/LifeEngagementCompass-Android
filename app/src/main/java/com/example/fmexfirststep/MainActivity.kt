@@ -85,16 +85,8 @@ private enum class AppStep {
     SavedRecords,
     RecoveryProgress,
     RecoveryMandala,
-    BasicInfo,
     SelfCheck,
     Result,
-    BeforeStart,
-    DeepBreathingLevel1,
-    DeepBreathingLevel2,
-    StandingLevel3,
-    DeepSquatLevel32,
-    IndoorWalkingLevel4,
-    FamilyProgramCompleted,
     SocialRehabilitationTop,
     SocialRehabilitationRecords,
     SocialRehabilitationLevel1,
@@ -124,13 +116,6 @@ private data class SelfCheckState(
 private data class ProgramLevel(
     val name: String,
     val message: String
-)
-
-private data class ExerciseProgram(
-    val programName: String,
-    val level: String,
-    val content: String,
-    val countChoices: List<String>
 )
 
 private data class SavedExerciseRecord(
@@ -171,9 +156,6 @@ private data class MandalaMarker(
 private fun FibromyalgiaFirstStepApp() {
     var step by remember { mutableStateOf(AppStep.Top) }
     var checkState by remember { mutableStateOf(SelfCheckState()) }
-    var dateText by remember { mutableStateOf("") }
-    var timeText by remember { mutableStateOf("") }
-    var basicMemo by remember { mutableStateOf("") }
     var level by remember { mutableStateOf<ProgramLevel?>(null) }
     var socialPreviewOnly by remember { mutableStateOf(false) }
     var scrollResetKey by remember { mutableStateOf(0) }
@@ -200,13 +182,7 @@ private fun FibromyalgiaFirstStepApp() {
             ) {
                 when (step) {
                     AppStep.Top -> TopScreen(
-                        onStart = {
-                            val now = Date()
-                            dateText = SimpleDateFormat("yyyy年M月d日", Locale.JAPAN).format(now)
-                            timeText = SimpleDateFormat("HH:mm", Locale.JAPAN).format(now)
-                            basicMemo = ""
-                            step = AppStep.BasicInfo
-                        },
+                        onSelfCheck = { step = AppStep.SelfCheck },
                         onStartSocialProgram = { step = AppStep.SocialRehabilitationTop },
                         onShowRecords = { step = AppStep.SavedRecords },
                         onShowRecoveryProgress = { step = AppStep.RecoveryProgress },
@@ -227,14 +203,6 @@ private fun FibromyalgiaFirstStepApp() {
                         onBack = { step = AppStep.Top }
                     )
 
-                    AppStep.BasicInfo -> BasicInfoScreen(
-                        dateText = dateText,
-                        timeText = timeText,
-                        memo = basicMemo,
-                        onMemoChange = { basicMemo = it },
-                        onNext = { step = AppStep.SelfCheck }
-                    )
-
                     AppStep.SelfCheck -> SelfCheckScreen(
                         state = checkState,
                         onStateChange = { checkState = it },
@@ -246,47 +214,8 @@ private fun FibromyalgiaFirstStepApp() {
 
                     AppStep.Result -> ResultScreen(
                         level = level ?: judgeProgramLevel(checkState),
-                        onNext = { step = AppStep.BeforeStart },
+                        onNext = { step = AppStep.SocialRehabilitationTop },
                         onRecheck = { step = AppStep.SelfCheck }
-                    )
-
-                    AppStep.BeforeStart -> BeforeStartScreen(
-                        onStartProgram = { step = AppStep.DeepBreathingLevel1 }
-                    )
-
-                    AppStep.DeepBreathingLevel1 -> DeepBreathingLevel1Screen(
-                        preExerciseMemo = basicMemo,
-                        onBackToTop = { step = AppStep.Top },
-                        onNext = { step = AppStep.DeepBreathingLevel2 }
-                    )
-
-                    AppStep.DeepBreathingLevel2 -> DeepBreathingLevel2Screen(
-                        preExerciseMemo = basicMemo,
-                        onBackToTop = { step = AppStep.Top },
-                        onNext = { step = AppStep.StandingLevel3 }
-                    )
-
-                    AppStep.StandingLevel3 -> StandingLevel3Screen(
-                        preExerciseMemo = basicMemo,
-                        onBackToTop = { step = AppStep.Top },
-                        onNext = { step = AppStep.DeepSquatLevel32 }
-                    )
-
-                    AppStep.DeepSquatLevel32 -> DeepSquatLevel32Screen(
-                        preExerciseMemo = basicMemo,
-                        onBackToTop = { step = AppStep.Top },
-                        onNext = { step = AppStep.IndoorWalkingLevel4 }
-                    )
-
-                    AppStep.IndoorWalkingLevel4 -> IndoorWalkingLevel4Screen(
-                        preExerciseMemo = basicMemo,
-                        onBackToTop = { step = AppStep.Top },
-                        onComplete = { step = AppStep.FamilyProgramCompleted }
-                    )
-
-                    AppStep.FamilyProgramCompleted -> FamilyProgramCompletedScreen(
-                        onBackToTop = { step = AppStep.Top },
-                        onStartSocialProgram = { step = AppStep.SocialRehabilitationTop }
                     )
 
                     AppStep.SocialRehabilitationTop -> SocialRehabilitationTopScreen(
@@ -395,7 +324,7 @@ private fun FibromyalgiaFirstStepApp() {
 
 @Composable
 private fun TopScreen(
-    onStart: () -> Unit,
+    onSelfCheck: () -> Unit,
     onStartSocialProgram: () -> Unit,
     onShowRecords: () -> Unit,
     onShowRecoveryProgress: () -> Unit,
@@ -434,7 +363,7 @@ private fun TopScreen(
     )
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         Button(
-            onClick = onStart,
+            onClick = onSelfCheck,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(76.dp),
@@ -443,7 +372,7 @@ private fun TopScreen(
                 contentColor = Color.White
             )
         ) {
-            Text("家庭生活復帰プログラム")
+            Text("自己評価・現在位置確認")
         }
         Button(
             onClick = onStartSocialProgram,
@@ -940,41 +869,6 @@ private fun SavedRecordDetailScreen(
 }
 
 @Composable
-private fun BasicInfoScreen(
-    dateText: String,
-    timeText: String,
-    memo: String,
-    onMemoChange: (String) -> Unit,
-    onNext: () -> Unit
-) {
-    ScreenTitle("基本情報")
-    Label("日付")
-    ValueBox(dateText)
-    Label("時間")
-    ValueBox(timeText)
-    Label("開始前メモ")
-    Text(
-        text = "運動を始める前に、覚えていることや気になることがあれば記録してください。",
-        color = TextPrimary,
-        lineHeight = 22.sp
-    )
-    OutlinedTextField(
-        value = memo,
-        onValueChange = onMemoChange,
-        modifier = Modifier.fillMaxWidth(),
-        minLines = 4,
-        colors = appTextFieldColors(),
-        placeholder = {
-            Text(
-                text = "例：昨日よく眠れなかった。朝から首が重い。外出後に疲れが残っている。",
-                color = TextHint
-            )
-        }
-    )
-    PrimaryButton(text = "次へ", onClick = onNext)
-}
-
-@Composable
 private fun SelfCheckScreen(
     state: SelfCheckState,
     onStateChange: (SelfCheckState) -> Unit,
@@ -1026,397 +920,6 @@ private fun ResultScreen(
 }
 
 @Composable
-private fun BeforeStartScreen(onStartProgram: () -> Unit) {
-    ScreenTitle("開始前確認")
-    MessageCard(
-        text = "すべての運動は深呼吸から始まります。\n\n深呼吸は準備運動ではありません。\n\n今日の身体の状態を確認するための最初の評価です。"
-    )
-    PrimaryButton(
-        text = "運動プログラム開始",
-        onClick = onStartProgram
-    )
-}
-
-@Composable
-private fun DeepBreathingLevel1Screen(
-    preExerciseMemo: String,
-    onBackToTop: () -> Unit,
-    onNext: () -> Unit
-) {
-    val context = LocalContext.current
-    var breathlessness by remember { mutableStateOf(0) }
-    var dizziness by remember { mutableStateOf(0) }
-    var chestPain by remember { mutableStateOf(0) }
-    var afterPractice by remember { mutableStateOf(0) }
-    var recordMessage by remember { mutableStateOf("") }
-
-    ScreenTitle("レベル1 深呼吸の練習")
-    SectionCard(
-        title = "目的",
-        body = "正しい深呼吸を身につけることです。\n\n回数を増やすことが目的ではありません。\n\nゆっくりと深く呼吸する感覚を身につけることが目的です。"
-    )
-    SectionCard(
-        title = "練習方法",
-        body = "① 楽な姿勢になります。\n\n② 鼻からゆっくり息を吸います。\n\n③ 胸とお腹が自然に動くことを確認します。\n\n④ ゆっくり最後まで息を吐きます。\n\n⑤ これを3回繰り返します。"
-    )
-    SectionCard(
-        title = "実施期間",
-        body = "最初の3日間は、この深呼吸の練習のみを行います。\n\n身体が新しい刺激に慣れる時間を大切にしてください。\n\nもし少し悪化した場合は、4日間このレベルを続けてください。"
-    )
-    Label("安全確認")
-    ChoiceField("息苦しさはありませんか。", SafetyCheckChoices, breathlessness) { breathlessness = it }
-    ChoiceField("めまいはありませんか。", SafetyCheckChoices, dizziness) { dizziness = it }
-    ChoiceField("胸の痛みはありませんか。", SafetyCheckChoices, chestPain) { chestPain = it }
-    Label("練習後の状態確認")
-    ChoiceField("深呼吸後の状態", AfterPracticeChoices, afterPractice) { afterPractice = it }
-    SectionCard(
-        title = "次のレベルへ進む条件",
-        body = "深呼吸の練習を3日間続け、大きな悪化がないことです。\n\n少し悪化した場合は、4日間続けてから次へ進みます。"
-    )
-    RecordButton(
-        onClick = {
-            recordMessage = if (
-                saveExerciseRecordSafely(
-                    context = context,
-                    program = DeepBreathingLevel1Program,
-                    count = DeepBreathingCountChoices.first(),
-                    selfEvaluation = AfterPracticeChoices[afterPractice],
-                    dizziness = SafetyCheckChoices[dizziness],
-                    breathlessness = SafetyCheckChoices[breathlessness],
-                    strongPain = RecordNotChecked,
-                    fallRisk = RecordNotChecked,
-                    preExerciseMemo = preExerciseMemo
-                )
-            ) {
-                "今日の記録を保存しました。"
-            } else {
-                "記録できませんでした。もう一度お試しください。"
-            }
-        }
-    )
-    if (recordMessage.isNotBlank()) {
-        MessageCard(text = recordMessage)
-        PrimaryButton(text = "最初に戻る", onClick = onBackToTop)
-    }
-    PrimaryButton(text = "レベル2へ進む", onClick = onNext)
-}
-
-@Composable
-private fun DeepBreathingLevel2Screen(
-    preExerciseMemo: String,
-    onBackToTop: () -> Unit,
-    onNext: () -> Unit
-) {
-    val context = LocalContext.current
-    var afterPractice by remember { mutableStateOf(0) }
-    var recordMessage by remember { mutableStateOf("") }
-
-    ScreenTitle("第1歩 深呼吸 レベル2")
-    Text(
-        text = "4日目以降",
-        color = TextPrimary,
-        fontSize = 18.sp,
-        fontWeight = FontWeight.Bold,
-        lineHeight = 24.sp
-    )
-    SectionCard(
-        title = "開始条件",
-        body = "同じ深呼吸プログラムを3日間継続し、大きな悪化がない場合に開始します。\n\n※少し悪化した場合は、4日間同じレベルを継続してから次へ進みます。"
-    )
-    SectionCard(
-        title = "目的",
-        body = "胸郭と横隔膜の柔軟性を高め、呼吸運動をさらに改善することを目的とします。"
-    )
-    SectionCard(
-        title = "実施方法",
-        body = "まず通常の深呼吸を3回行います。\n\nその後、息を十分吸ったところで、さらに少しだけ息を吸い足します（補気）。\n\n無理に大きく吸う必要はありません。\n\n胸郭と横隔膜が心地よく伸びる程度で十分です。\n\nそのまま数秒保ち、ゆっくり最後まで息を吐きます。\n\nこれを3回繰り返します。"
-    )
-    SectionCard(
-        title = "確認項目",
-        body = "・胸が広がる感じがありますか。\n\n・息苦しさはありませんか。\n\n・めまいはありませんか。\n\n・胸の痛みはありませんか。"
-    )
-    Label("深呼吸後の自己評価")
-    ChoiceField("深呼吸後の状態", AfterPracticeChoices, afterPractice) { afterPractice = it }
-    SectionCard(
-        title = "注意",
-        body = "胸や肩に力を入れ過ぎないでください。\n\n身体が心地よく伸びる範囲で行います。\n\n無理をしないことが最も重要です。"
-    )
-    RecordButton(
-        onClick = {
-            recordMessage = if (
-                saveExerciseRecordSafely(
-                    context = context,
-                    program = DeepBreathingLevel2Program,
-                    count = DeepBreathingCountChoices.first(),
-                    selfEvaluation = AfterPracticeChoices[afterPractice],
-                    dizziness = RecordNotChecked,
-                    breathlessness = RecordNotChecked,
-                    strongPain = RecordNotChecked,
-                    fallRisk = RecordNotChecked,
-                    preExerciseMemo = preExerciseMemo
-                )
-            ) {
-                "今日の記録を保存しました。"
-            } else {
-                "記録できませんでした。もう一度お試しください。"
-            }
-        }
-    )
-    if (recordMessage.isNotBlank()) {
-        MessageCard(text = recordMessage)
-        PrimaryButton(text = "最初に戻る", onClick = onBackToTop)
-    }
-    PrimaryButton(text = "レベル3へ進む", onClick = onNext)
-}
-
-@Composable
-private fun StandingLevel3Screen(
-    preExerciseMemo: String,
-    onBackToTop: () -> Unit,
-    onNext: () -> Unit
-) {
-    val context = LocalContext.current
-    var dizziness by remember { mutableStateOf(0) }
-    var breathlessness by remember { mutableStateOf(0) }
-    var strongPain by remember { mutableStateOf(0) }
-    var fallRisk by remember { mutableStateOf(0) }
-    var afterPractice by remember { mutableStateOf(0) }
-    var recordMessage by remember { mutableStateOf("") }
-
-    ScreenTitle("レベル3 起立練習")
-    SectionCard(
-        title = "目的",
-        body = "安全に立ち上がる動作を始めることです。\n\n立ち上がる回数を競うことが目的ではありません。\n\n身体が起立動作に慣れることを目的とします。"
-    )
-    SectionCard(
-        title = "開始条件",
-        body = "深呼吸レベル2を3日間継続し、大きな悪化がない場合に開始します。\n\n少し悪化した場合は、4日間継続してから次へ進みます。"
-    )
-    SectionCard(
-        title = "実施方法",
-        body = "① 深呼吸を3回行います。\n\n② 安定した椅子に座ります。\n\n③ 必要に応じて手すりや机を使用します。\n\n④ ゆっくり立ち上がります。\n\n⑤ 数秒間立位を保ちます。\n\n⑥ ゆっくり座ります。\n\n最初は 1回 行います。\n\n身体の状態が安定していれば、3日ごと（または4日ごと）に 1回 → 2回 → 3回 と少しずつ増やしてください。"
-    )
-    Label("安全確認")
-    ChoiceField("めまいはありませんか。", SafetyCheckChoices, dizziness) { dizziness = it }
-    ChoiceField("息苦しさはありませんか。", SafetyCheckChoices, breathlessness) { breathlessness = it }
-    ChoiceField("強い痛みはありませんか。", SafetyCheckChoices, strongPain) { strongPain = it }
-    ChoiceField("転倒しそうな感じはありませんか。", SafetyCheckChoices, fallRisk) { fallRisk = it }
-    Label("終了後の自己評価")
-    ChoiceField("起立練習後の状態", AfterPracticeChoices, afterPractice) { afterPractice = it }
-    SectionCard(
-        title = "次のレベルへ進む条件",
-        body = "起立練習を3回、安全に行えるようになり、大きな悪化がないこと。\n\n少し悪化した場合は、4日間継続してから次へ進みます。"
-    )
-    RecordButton(
-        onClick = {
-            recordMessage = if (
-                saveExerciseRecordSafely(
-                    context = context,
-                    program = StandingLevel3Program,
-                    count = StandingCountChoices.first(),
-                    selfEvaluation = AfterPracticeChoices[afterPractice],
-                    dizziness = SafetyCheckChoices[dizziness],
-                    breathlessness = SafetyCheckChoices[breathlessness],
-                    strongPain = SafetyCheckChoices[strongPain],
-                    fallRisk = SafetyCheckChoices[fallRisk],
-                    preExerciseMemo = preExerciseMemo
-                )
-            ) {
-                "今日の記録を保存しました。"
-            } else {
-                "記録できませんでした。もう一度お試しください。"
-            }
-        }
-    )
-    if (recordMessage.isNotBlank()) {
-        MessageCard(text = recordMessage)
-        PrimaryButton(text = "最初に戻る", onClick = onBackToTop)
-    }
-    PrimaryButton(text = "レベル3-2へ進む", onClick = onNext)
-}
-
-@Composable
-private fun DeepSquatLevel32Screen(
-    preExerciseMemo: String,
-    onBackToTop: () -> Unit,
-    onNext: () -> Unit
-) {
-    val context = LocalContext.current
-    var dizziness by remember { mutableStateOf(0) }
-    var strongPain by remember { mutableStateOf(0) }
-    var fallRisk by remember { mutableStateOf(0) }
-    var heldTenSeconds by remember { mutableStateOf(0) }
-    var afterPractice by remember { mutableStateOf(0) }
-    var recordMessage by remember { mutableStateOf("") }
-
-    ScreenTitle("レベル3-2 和式座り")
-    Text(
-        text = "Deep Squat",
-        color = TextPrimary,
-        fontSize = 18.sp,
-        fontWeight = FontWeight.Bold,
-        lineHeight = 24.sp
-    )
-    SectionCard(
-        title = "目的",
-        body = "下肢・股関節・骨盤・体幹の柔軟性と安定性を改善することを目的とします。\n\n和式座りは、日本人が昔から行ってきた自然な姿勢です。\n\n無理に深くしゃがむ必要はありません。\n\n痛みのない範囲で行ってください。"
-    )
-    SectionCard(
-        title = "開始条件",
-        body = "起立練習を安全に行えるようになり、大きな悪化がない場合に開始します。\n\n少し悪化した場合は、現在のレベルを4日間継続してから次へ進んでください。"
-    )
-    SectionCard(
-        title = "実施方法",
-        body = "① 安定した場所で行います。\n\n② 必要に応じて机や手すりを使用してください。\n\n③ ゆっくり和式座り（Deep Squat）の姿勢になります。\n\n④ 10秒間保持します。\n\n⑤ ゆっくり立ち上がります。\n\n1日1回のみ実施してください。"
-    )
-    Label("安全確認")
-    ChoiceField("めまいはありませんか。", SafetyCheckChoices, dizziness) { dizziness = it }
-    ChoiceField("強い痛みはありませんか。", SafetyCheckChoices, strongPain) { strongPain = it }
-    ChoiceField("転倒しそうな感じはありませんか。", SafetyCheckChoices, fallRisk) { fallRisk = it }
-    Label("記録")
-    ChoiceField("10秒保持できたか", HoldTenSecondsChoices, heldTenSeconds) { heldTenSeconds = it }
-    Label("終了後の自己評価")
-    ChoiceField("和式座り後の状態", AfterPracticeChoices, afterPractice) { afterPractice = it }
-    RecordButton(
-        onClick = {
-            recordMessage = if (
-                saveExerciseRecordSafely(
-                    context = context,
-                    program = DeepSquatLevel32Program,
-                    count = HoldTenSecondsChoices[heldTenSeconds],
-                    selfEvaluation = AfterPracticeChoices[afterPractice],
-                    dizziness = SafetyCheckChoices[dizziness],
-                    breathlessness = RecordNotChecked,
-                    strongPain = SafetyCheckChoices[strongPain],
-                    fallRisk = SafetyCheckChoices[fallRisk],
-                    preExerciseMemo = preExerciseMemo
-                )
-            ) {
-                "今日の記録を保存しました。"
-            } else {
-                "記録できませんでした。もう一度お試しください。"
-            }
-        }
-    )
-    if (recordMessage.isNotBlank()) {
-        MessageCard(text = recordMessage)
-        PrimaryButton(text = "最初に戻る", onClick = onBackToTop)
-    }
-    PrimaryButton(text = "レベル4へ進む", onClick = onNext)
-}
-
-@Composable
-private fun IndoorWalkingLevel4Screen(
-    preExerciseMemo: String,
-    onBackToTop: () -> Unit,
-    onComplete: () -> Unit
-) {
-    val context = LocalContext.current
-    var dizziness by remember { mutableStateOf(0) }
-    var breathlessness by remember { mutableStateOf(0) }
-    var strongPain by remember { mutableStateOf(0) }
-    var fallRisk by remember { mutableStateOf(0) }
-    var toilet by remember { mutableStateOf(false) }
-    var washroom by remember { mutableStateOf(false) }
-    var kitchen by remember { mutableStateOf(false) }
-    var diningTable by remember { mutableStateOf(false) }
-    var entrance by remember { mutableStateOf(false) }
-    var afterPractice by remember { mutableStateOf(0) }
-    var recordMessage by remember { mutableStateOf("") }
-
-    val achievedText = listOf(
-        recordCheckLine("トイレ", toilet),
-        recordCheckLine("洗面所", washroom),
-        recordCheckLine("台所", kitchen),
-        recordCheckLine("食卓", diningTable),
-        recordCheckLine("玄関", entrance)
-    ).joinToString("\n")
-
-    ScreenTitle("レベル4 屋内歩行練習")
-    SectionCard(
-        title = "目的",
-        body = "歩くこと自体が目的ではありません。\n\n日常生活の中で必要な場所へ、安全に移動できるようになることが目的です。\n\n焦らず、一つずつ生活範囲を広げていきます。"
-    )
-    SectionCard(
-        title = "開始条件",
-        body = "起立練習を安全に行えるようになり、大きな悪化がない場合に開始します。\n\n少し悪化した場合は、現在のレベルを4日間継続してから次へ進んでください。"
-    )
-    SectionCard(
-        title = "実施方法",
-        body = "次の目標を一つずつ達成していきます。\n\n□ トイレまで歩いて行く\n\n□ 洗面所まで歩いて行く\n\n□ 台所まで歩いて行く\n\n□ 食卓まで歩いて行く\n\n□ 玄関まで歩いて行く\n\nすべてを一度に行う必要はありません。\n\nその日に達成できた目標だけで十分です。"
-    )
-    Label("安全確認")
-    ChoiceField("めまいはありませんか。", SafetyCheckChoices, dizziness) { dizziness = it }
-    ChoiceField("息苦しさはありませんか。", SafetyCheckChoices, breathlessness) { breathlessness = it }
-    ChoiceField("強い痛みはありませんか。", SafetyCheckChoices, strongPain) { strongPain = it }
-    ChoiceField("転倒しそうな感じはありませんか。", SafetyCheckChoices, fallRisk) { fallRisk = it }
-    Label("今日達成できた場所")
-    CheckItem("トイレ", toilet) { toilet = it }
-    CheckItem("洗面所", washroom) { washroom = it }
-    CheckItem("台所", kitchen) { kitchen = it }
-    CheckItem("食卓", diningTable) { diningTable = it }
-    CheckItem("玄関", entrance) { entrance = it }
-    Label("終了後の自己評価")
-    ChoiceField("屋内歩行練習後の状態", AfterPracticeChoices, afterPractice) { afterPractice = it }
-    SectionCard(
-        title = "記録",
-        body = "今日到達できた場所を記録してください。\n\n達成した場所、自己評価、実施日時を保存してください。\n\n途中で症状が悪化した場合は、その時点で終了し、現在到達した場所までを記録してください。"
-    )
-    RecordButton(
-        onClick = {
-            recordMessage = if (
-                saveExerciseRecordSafely(
-                    context = context,
-                    program = IndoorWalkingLevel4Program,
-                    count = achievedText,
-                    selfEvaluation = AfterPracticeChoices[afterPractice],
-                    dizziness = SafetyCheckChoices[dizziness],
-                    breathlessness = SafetyCheckChoices[breathlessness],
-                    strongPain = SafetyCheckChoices[strongPain],
-                    fallRisk = SafetyCheckChoices[fallRisk],
-                    preExerciseMemo = preExerciseMemo
-                )
-            ) {
-                "今日の記録を保存しました。"
-            } else {
-                "記録できませんでした。もう一度お試しください。"
-            }
-        }
-    )
-    if (recordMessage.isNotBlank()) {
-        MessageCard(text = recordMessage)
-        PrimaryButton(text = "最初に戻る", onClick = onBackToTop)
-    }
-    SectionCard(
-        title = "確認",
-        body = "今日の目標を達成できたことを確認してください。\n\n無理に次の目標へ進む必要はありません。\n\n生活範囲を少しずつ広げることが、このレベルの目的です。"
-    )
-    PrimaryButton(
-        text = "家庭生活復帰プログラム修了へ進む",
-        onClick = onComplete
-    )
-}
-
-@Composable
-private fun FamilyProgramCompletedScreen(
-    onBackToTop: () -> Unit,
-    onStartSocialProgram: () -> Unit
-) {
-    ScreenTitle("家庭生活復帰プログラム修了")
-    MessageCard(
-        text = "お疲れさまでした。\n\n家庭生活復帰プログラムを修了しました。\n\n次の目標に進む方は、\n\n社会復帰プログラムを開始してください。"
-    )
-    PrimaryButton(
-        text = "家庭生活復帰プログラムを終了する",
-        onClick = onBackToTop
-    )
-    PrimaryButton(
-        text = "社会復帰プログラムを開始する",
-        onClick = onStartSocialProgram
-    )
-}
-
-@Composable
 private fun SocialRehabilitationTopScreen(
     onStartLevel1: () -> Unit,
     onStartLevel2: () -> Unit,
@@ -1430,7 +933,7 @@ private fun SocialRehabilitationTopScreen(
 ) {
     ScreenTitle("社会復帰プログラム")
     MessageCard(
-        text = "家庭生活復帰プログラムを修了された方、\n\nまたは医師から勧められた方が対象です。\n\n現在の状態に合わせて、取り組むレベルを選んでください。"
+        text = "医師から勧められた方が対象です。\n\n現在の状態に合わせて、取り組むレベルを選んでください。"
     )
     CalmNextStageButton(
         text = "レベル1　屋外歩行",
@@ -2463,71 +1966,6 @@ private fun SocialRehabilitationLevel6Screen(
 }
 
 @Composable
-private fun ExerciseRecordScreen(
-    program: ExerciseProgram?,
-    hasNext: Boolean,
-    nextButtonText: String,
-    onContinue: () -> Unit
-) {
-    val context = LocalContext.current
-    val currentProgram = program ?: DeepBreathingLevel1Program
-    val now = remember(currentProgram) { Date() }
-    val dateText = remember(currentProgram) { SimpleDateFormat("yyyy年M月d日", Locale.JAPAN).format(now) }
-    val timeText = remember(currentProgram) { SimpleDateFormat("HH:mm", Locale.JAPAN).format(now) }
-    var count by remember(currentProgram) { mutableStateOf(0) }
-    var selfEvaluation by remember(currentProgram) { mutableStateOf(0) }
-    var dizziness by remember(currentProgram) { mutableStateOf(0) }
-    var breathlessness by remember(currentProgram) { mutableStateOf(0) }
-    var strongPain by remember(currentProgram) { mutableStateOf(0) }
-    var fallRisk by remember(currentProgram) { mutableStateOf(0) }
-    var saved by remember(currentProgram) { mutableStateOf(false) }
-
-    ScreenTitle("運動記録")
-    Label("実施日")
-    ValueBox(dateText)
-    Label("実施時刻")
-    ValueBox(timeText)
-    SectionCard(
-        title = "プログラム",
-        body = "プログラム名：${currentProgram.programName}\n\nレベル：${currentProgram.level}\n\n実施内容：${currentProgram.content}"
-    )
-    ChoiceField("実施回数", currentProgram.countChoices, count) { count = it }
-    ChoiceField("実施後の自己評価", AfterPracticeChoices, selfEvaluation) { selfEvaluation = it }
-    Label("安全確認")
-    ChoiceField("めまいなし", RecordSafetyChoices, dizziness) { dizziness = it }
-    ChoiceField("息苦しさなし", RecordSafetyChoices, breathlessness) { breathlessness = it }
-    ChoiceField("強い痛みなし", RecordSafetyChoices, strongPain) { strongPain = it }
-    ChoiceField("転倒しそうな感じなし", RecordSafetyChoices, fallRisk) { fallRisk = it }
-
-    if (saved) {
-        MessageCard(text = "今日の記録を保存しました。")
-    } else {
-        PrimaryButton(
-            text = "記録を保存",
-            onClick = {
-                saveExerciseRecord(
-                    context = context,
-                    dateText = dateText,
-                    timeText = timeText,
-                    program = currentProgram,
-                    count = currentProgram.countChoices[count],
-                    selfEvaluation = AfterPracticeChoices[selfEvaluation],
-                    dizziness = RecordSafetyChoices[dizziness],
-                    breathlessness = RecordSafetyChoices[breathlessness],
-                    strongPain = RecordSafetyChoices[strongPain],
-                    fallRisk = RecordSafetyChoices[fallRisk]
-                )
-                saved = true
-            }
-        )
-    }
-
-    if (saved && hasNext) {
-        PrimaryButton(text = nextButtonText.ifBlank { "次へ" }, onClick = onContinue)
-    }
-}
-
-@Composable
 private fun SectionCard(
     title: String,
     body: String
@@ -2834,71 +2272,6 @@ private fun hasStrongBurden(state: SelfCheckState): Boolean {
         state.sleep >= 3 ||
         state.breathing >= 2 ||
         state.comparison >= 3
-}
-
-private fun saveExerciseRecordSafely(
-    context: Context,
-    program: ExerciseProgram,
-    count: String,
-    selfEvaluation: String,
-    dizziness: String,
-    breathlessness: String,
-    strongPain: String,
-    fallRisk: String,
-    preExerciseMemo: String = ""
-): Boolean {
-    return runCatching {
-        val now = Date()
-        saveExerciseRecord(
-            context = context,
-            dateText = SimpleDateFormat("yyyy年M月d日", Locale.JAPAN).format(now),
-            timeText = SimpleDateFormat("HH:mm", Locale.JAPAN).format(now),
-            program = program,
-            count = count,
-            selfEvaluation = selfEvaluation,
-            dizziness = dizziness,
-            breathlessness = breathlessness,
-            strongPain = strongPain,
-            fallRisk = fallRisk,
-            preExerciseMemo = preExerciseMemo
-        )
-    }.isSuccess
-}
-
-private fun saveExerciseRecord(
-    context: Context,
-    dateText: String,
-    timeText: String,
-    program: ExerciseProgram,
-    count: String,
-    selfEvaluation: String,
-    dizziness: String,
-    breathlessness: String,
-    strongPain: String,
-    fallRisk: String,
-    preExerciseMemo: String = ""
-) {
-    val preferences = context.getSharedPreferences(ExerciseRecordPreferencesName, Context.MODE_PRIVATE)
-    val records = JSONArray(preferences.getString(ExerciseRecordListKey, "[]") ?: "[]")
-    val record = JSONObject()
-        .put("date", dateText)
-        .put("time", timeText)
-        .put("programName", program.programName)
-        .put("level", program.level)
-        .put("content", program.content)
-        .put("count", count)
-        .put("selfEvaluation", selfEvaluation)
-        .put("preExerciseMemo", preExerciseMemo)
-        .put(
-            "safety",
-            JSONObject()
-                .put("dizziness", dizziness)
-                .put("breathlessness", breathlessness)
-                .put("strongPain", strongPain)
-                .put("fallRisk", fallRisk)
-        )
-    records.put(record)
-    preferences.edit().putString(ExerciseRecordListKey, records.toString()).apply()
 }
 
 private fun saveSimpleSocialRehabilitationRecordSafely(
@@ -3289,11 +2662,7 @@ private val SleepChoices = listOf("眠れた", "少し眠れた", "眠りが浅�
 private val BreathingChoices = listOf("落ち着いている", "少し浅い", "苦しさがある", "苦しさが強い")
 private val ComparisonChoices = listOf("昨日より良い", "少し良い", "変わらない", "少し悪い", "かなり悪い")
 private val AbilityChoices = listOf("できる", "少しならできる", "今日は難しい")
-private val SafetyCheckChoices = listOf("ない", "少しある", "ある")
-private val AfterPracticeChoices = listOf("① 楽になった", "② 変わらない", "③ 少しつらい", "④ 思ったよりつらかった", "⑤ 動けなくなった")
 private val SocialSelfEvaluationChoices = listOf("① 楽になった", "② 変わらない", "③ 少しつらい", "④ 思ったよりつらかった", "⑤ 動けなくなった")
-private val RecordSafetyChoices = listOf("はい", "少し不安あり", "いいえ")
-private val HoldTenSecondsChoices = listOf("できた", "少しできた", "今日は難しい")
 private val SocialTimeOfDayChoices = listOf("午前", "午後")
 private val SocialWalkingMinuteChoices = listOf("1分", "2分", "3分", "4分", "5分")
 private val NextDayWorseChoices = listOf("① 悪化なし", "② 少し悪化", "③ 明らかな悪化")
@@ -3311,43 +2680,6 @@ private const val SocialRehabilitationLevel5BackCriteria = "□ 休息を入れ�
 private const val SocialRehabilitationLevel6NextCriteria = "□ 2時間に1回の休息を守れた\n\n□ 超過勤務をしなかった\n\n□ 安全に帰宅できた\n\n□ 翌日に大きな悪化がなかった\n\nすべてを確認できたら、社会復帰を継続することを考えましょう。"
 private const val SocialRehabilitationLevel6BackCriteria = "□ 超過勤務をしてしまった\n\n□ 帰宅後に寝込んだ\n\n□ 仕事帰りの買い物で悪化した\n\n□ 翌日に明らかな悪化があった\n\n一つでも当てはまる場合は、一つ前の段階へ戻ることを考えましょう。"
 private const val RecordNotChecked = "未確認"
-private val DeepBreathingCountChoices = listOf("3回")
-private val StandingCountChoices = listOf("1回", "2回", "3回")
-
-private val DeepBreathingLevel1Program = ExerciseProgram(
-    programName = "深呼吸の練習",
-    level = "レベル1",
-    content = "鼻からゆっくり息を吸い、胸とお腹の自然な動きを確認しながら、ゆっくり最後まで息を吐きます。",
-    countChoices = DeepBreathingCountChoices
-)
-
-private val DeepBreathingLevel2Program = ExerciseProgram(
-    programName = "深呼吸",
-    level = "レベル2",
-    content = "通常の深呼吸を3回行った後、息を十分吸ったところで少しだけ吸い足し、数秒保ってからゆっくり吐きます。",
-    countChoices = DeepBreathingCountChoices
-)
-
-private val StandingLevel3Program = ExerciseProgram(
-    programName = "起立練習",
-    level = "レベル3",
-    content = "安定した椅子から必要に応じて手すりや机を使用し、ゆっくり立ち上がって数秒保ち、ゆっくり座ります。",
-    countChoices = StandingCountChoices
-)
-
-private val DeepSquatLevel32Program = ExerciseProgram(
-    programName = "和式座り（Deep Squat）",
-    level = "レベル3-2",
-    content = "安定した場所で必要に応じて机や手すりを使用し、ゆっくり和式座りの姿勢になって10秒間保持します。",
-    countChoices = HoldTenSecondsChoices
-)
-
-private val IndoorWalkingLevel4Program = ExerciseProgram(
-    programName = "屋内歩行練習",
-    level = "レベル4",
-    content = "日常生活の中で必要な場所へ、安全に移動できるように、達成できる場所を一つずつ広げます。",
-    countChoices = listOf("トイレ", "洗面所", "台所", "食卓", "玄関")
-)
 
 private const val ExerciseRecordPreferencesName = "exercise_records"
 private const val ExerciseRecordListKey = "records"
