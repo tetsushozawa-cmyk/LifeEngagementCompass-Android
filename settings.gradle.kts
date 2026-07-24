@@ -22,6 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "FM EX First step"
+rootProject.name = "LifeEngagementCompass-Android"
 include(":app")
- 
