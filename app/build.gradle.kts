@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.fmexfirststep"
+    namespace = "com.tetsushozawa.lifeengagementcompass"
     compileSdk = 37
 
     defaultConfig {
