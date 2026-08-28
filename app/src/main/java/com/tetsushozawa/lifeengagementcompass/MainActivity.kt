@@ -288,7 +288,7 @@ private fun LifeEngagementCompassApp() {
                         onBack = { step = AppStep.SocialRehabilitationTop },
                         onNextLevel = { conditionMet ->
                             socialPreviewOnly = !conditionMet
-                            step = AppStep.SocialRehabilitationWalking3
+                            step = AppStep.SocialRehabilitationLevel2
                         }
                     )
 
@@ -298,7 +298,7 @@ private fun LifeEngagementCompassApp() {
                         onBack = { step = AppStep.SocialRehabilitationTop },
                         onNextLevel = { conditionMet ->
                             socialPreviewOnly = !conditionMet
-                            step = AppStep.SocialRehabilitationWalking5
+                            step = AppStep.SocialRehabilitationLevel2
                         }
                     )
 
@@ -363,7 +363,7 @@ private fun LifeEngagementCompassApp() {
 
                     AppStep.SocialRehabilitationLevel2Ride -> SocialRehabilitationLevel2RideScreen(
                         onBack = { step = AppStep.SocialRehabilitationTop },
-                        onNextLevel3 = { step = AppStep.SocialRehabilitationLevel3 },
+                        onNextLevel3 = { step = AppStep.SocialRehabilitationLevel2Solo },
                         onNextLevel3Car = { step = AppStep.SocialRehabilitationLevel3Car },
                         onNextLevel4 = { step = AppStep.SocialRehabilitationLevel4 },
                         onNextLevel5 = { step = AppStep.SocialRehabilitationLevel5 }
@@ -1257,7 +1257,9 @@ private fun SocialRehabilitationOutdoorWalkingScreen(
     ScreenTitle(
         if (isWalkingProgramStart) {
             "社会復帰編　屋外歩行"
-        } else if (walkingMinutes == 3 || walkingMinutes == 5) {
+        } else if (walkingMinutes == 3) {
+            "社会復帰編 屋外歩行30分以内"
+        } else if (walkingMinutes == 5) {
             screenLevelName
         } else {
             "$screenLevelName　屋外歩行$walkingMinuteText"
@@ -1266,6 +1268,8 @@ private fun SocialRehabilitationOutdoorWalkingScreen(
     Text(
         text = if (isWalkingProgramStart) {
             "屋外歩行時間を少しずつ延長します"
+        } else if (walkingMinutes == 3) {
+            "30分以内の屋外歩行"
         } else {
             "${walkingMinuteText}以内の屋外歩行"
         },
@@ -1292,8 +1296,8 @@ private fun SocialRehabilitationOutdoorWalkingScreen(
     Label("時刻")
     ValueBox(timeText)
     ChoiceField("午前／午後", SocialTimeOfDayChoices, timeOfDay) { timeOfDay = it }
-    ChoiceField("目標地点", walkingMinuteChoices, targetPoint) { targetPoint = it }
-    ChoiceField("今日の到達地点", walkingMinuteChoices, reachedPoint) { reachedPoint = it }
+    ChoiceField("今日の目標時間", walkingMinuteChoices, targetPoint) { targetPoint = it }
+    ChoiceField("今日できた時間", walkingMinuteChoices, reachedPoint) { reachedPoint = it }
     CheckItem("10秒歩いたあと、10〜30秒休憩する", walkedTenSeconds) { walkedTenSeconds = it }
     CheckItem("20秒歩いたあと、10〜30秒休憩する", walkedTwentySeconds) { walkedTwentySeconds = it }
     CheckItem("30秒歩いたあと、10〜30秒休憩する", walkedThirtySeconds) { walkedThirtySeconds = it }
@@ -1348,7 +1352,7 @@ private fun SocialRehabilitationOutdoorWalkingScreen(
         MessageCard(text = savedMessage)
     }
     CalmNextStageButton(
-        text = "次のレベルへ",
+        text = if (isWalkingProgramStart) "レベル2へ" else "次のレベルへ",
         onClick = {
             onNextLevel(returnedSafely && nextDayWorse == 0)
         }
@@ -1428,15 +1432,15 @@ private fun SocialRehabilitationLevel2Screen(
         MessageCard(text = savedMessage)
     }
     PrimaryButton(
-        text = "一人でスーパーへ行く",
-        onClick = onSolo
-    )
-    PrimaryButton(
         text = "スーパーまで送ってもらう",
         onClick = onRide
     )
+    PrimaryButton(
+        text = "一人でスーパーへ行く",
+        onClick = onSolo
+    )
     CalmNextStageButton(
-        text = "次のレベルへ",
+        text = "レベル3へ",
         onClick = {
             onNextLevel(nextDayWorse == 0)
         }
@@ -1693,6 +1697,7 @@ private fun SocialRehabilitationLevel2RideScreen(
         MessageCard(text = savedMessage)
     }
     Level2EndButtons(
+        nextLevel3Text = "一人でスーパーへ行く",
         onNextLevel3 = onNextLevel3,
         onNextLevel3Car = onNextLevel3Car,
         onNextLevel4 = onNextLevel4,
@@ -1703,6 +1708,7 @@ private fun SocialRehabilitationLevel2RideScreen(
 
 @Composable
 private fun Level2EndButtons(
+    nextLevel3Text: String = "レベル3-A　公共交通機関通勤予行",
     onNextLevel3: () -> Unit,
     onNextLevel3Car: () -> Unit,
     onNextLevel4: () -> Unit,
@@ -1710,7 +1716,7 @@ private fun Level2EndButtons(
     onBack: () -> Unit
 ) {
     CalmNextStageButton(
-        text = "レベル3-A　公共交通機関通勤予行",
+        text = nextLevel3Text,
         onClick = onNextLevel3
     )
     CalmNextStageButton(
@@ -1851,7 +1857,7 @@ private fun SocialRehabilitationLevel3Screen(
         MessageCard(text = savedMessage)
     }
     CalmNextStageButton(
-        text = "次の段階へ進む",
+        text = "レベル4へ進む",
         onClick = onNextLevel4
     )
     CalmBackButton(onClick = onBack)
@@ -1957,7 +1963,7 @@ private fun SocialRehabilitationLevel3CarScreen(
         MessageCard(text = savedMessage)
     }
     CalmNextStageButton(
-        text = "次の段階へ進む",
+        text = "レベル4へ進む",
         onClick = onNextLevel4
     )
     CalmBackButton(onClick = onBack)
@@ -2048,7 +2054,13 @@ private fun SocialRehabilitationLevel5Screen(
     val dateText = remember { SimpleDateFormat("yyyy年M月d日", Locale.JAPAN).format(now) }
     val timeText = remember { SimpleDateFormat("HH:mm", Locale.JAPAN).format(now) }
     val previousEvaluation = remember(context) {
-        loadLatestSocialEvaluationSafely(context, "レベル5", "短時間勤務予行")
+        loadLatestSocialEvaluationSafely(
+            context = context,
+            level = "レベル5",
+            content = "短時間勤務予行",
+            nextDayWorseChoices = Level5BedtimeStateChoices,
+            legacyNextDayWorseChoices = NextDayWorseChoices
+        )
     }
     var workTime by remember { mutableStateOf(0) }
     var keptScheduledRest by remember { mutableStateOf(false) }
@@ -2125,7 +2137,7 @@ private fun SocialRehabilitationLevel5Screen(
     )
     CheckItem("安全に帰宅できたか", returnedSafely) { returnedSafely = it }
     ChoiceField("実施後の自己評価", SocialSelfEvaluationChoices, selfEvaluation) { selfEvaluation = it }
-    ChoiceField("翌日の悪化", NextDayWorseChoices, nextDayWorse) { nextDayWorse = it }
+    ChoiceField("就寝時の状態", Level5BedtimeStateChoices, nextDayWorse) { nextDayWorse = it }
     SectionCard(
         title = "次の段階へ進む目安",
         body = "□ 1時間ごとの5分休息を守れた\n\n□ 勤務中に大きく崩れなかった\n\n□ 安全に帰宅できた\n\n□ 翌日に大きな悪化がなかった\n\nすべてを確認できたら、次の段階へ進むことを考えましょう。"
@@ -2156,7 +2168,7 @@ private fun SocialRehabilitationLevel5Screen(
                     earlyLeaveReason = earlyLeaveReason,
                     returnedSafely = returnedSafely,
                     selfEvaluation = SocialSelfEvaluationChoices[selfEvaluation],
-                    nextDayWorse = NextDayWorseChoices[nextDayWorse]
+                    nextDayWorse = Level5BedtimeStateChoices[nextDayWorse]
                 )
             ) {
                 "レベル5の記録を保存しました。"
@@ -2169,7 +2181,7 @@ private fun SocialRehabilitationLevel5Screen(
         MessageCard(text = savedMessage)
     }
     CalmNextStageButton(
-        text = "次のレベルへ進む",
+        text = "レベル6へ進む",
         onClick = onNextLevel6
     )
     CalmBackButton(onClick = onBack)
@@ -2876,7 +2888,9 @@ private fun recordCheckLine(label: String, checked: Boolean): String {
 private fun loadLatestSocialEvaluationSafely(
     context: Context,
     level: String,
-    content: String
+    content: String,
+    nextDayWorseChoices: List<String> = NextDayWorseChoices,
+    legacyNextDayWorseChoices: List<String> = emptyList()
 ): SocialEvaluationInputState {
     return runCatching {
         val preferences = context.getSharedPreferences(ExerciseRecordPreferencesName, Context.MODE_PRIVATE)
@@ -2894,10 +2908,9 @@ private fun loadLatestSocialEvaluationSafely(
                         record.optString("selfEvaluation"),
                         SocialSelfEvaluationChoices
                     ),
-                    nextDayWorse = savedEvaluationIndex(
-                        record.optString("nextDayWorse"),
-                        NextDayWorseChoices
-                    )
+                    nextDayWorse = savedEvaluationIndex(record.optString("nextDayWorse"), nextDayWorseChoices)
+                        .takeUnless { it == 0 }
+                        ?: savedEvaluationIndex(record.optString("nextDayWorse"), legacyNextDayWorseChoices)
                 )
             }
         }
@@ -3096,16 +3109,23 @@ private fun loadExerciseRecordsSafely(context: Context): List<SavedExerciseRecor
     }.getOrDefault(emptyList())
 }
 
-private val PainChoices = listOf("痛くない", "軽い", "少しある", "強い", "かなり強い", "動くのがつらい")
-private val FatigueChoices = listOf("無し", "軽い", "少しある", "強い", "かなり強い", "休息が必要")
-private val SleepChoices = listOf("眠れた", "少し眠れた", "眠りが浅い", "ほとんど眠れない")
+private val PainChoices = listOf("痛くない", "軽い", "痛い", "強い", "かなり強い", "動くのがつらい")
+private val FatigueChoices = listOf("無し", "軽い", "疲労感がある", "強い", "かなり強い", "休息が必要")
+private val SleepChoices = listOf("眠れた", "夜間目を覚ました事がある", "眠り足りない", "眠りが浅い", "ほとんど眠れない")
 private val BreathingChoices = listOf("落ち着いている", "少し浅い", "苦しさがある", "苦しさが強い")
 private val ComparisonChoices = listOf("昨日より良い", "少し良い", "変わらない", "少し悪い", "かなり悪い")
-private val AbilityChoices = listOf("できる", "少しならできる", "今日は難しい")
+private val AbilityChoices = listOf("できる", "少し辛い", "今日は難しい")
 private val SocialSelfEvaluationChoices = listOf("① 楽になった", "② 変わらない", "③ 少しつらい", "④ 思ったよりつらかった", "⑤ 動けなくなった")
 private val SocialTimeOfDayChoices = listOf("午前", "午後")
 private val SocialWalkingMinuteChoices = listOf("1分", "2分", "3分", "4分", "5分", "10分", "20分", "30分")
 private val NextDayWorseChoices = listOf("① 悪化なし", "② 少し悪化", "③ 明らかな悪化")
+private val Level5BedtimeStateChoices = listOf(
+    "① 問題なし",
+    "② 少し悪化した",
+    "③ 悪化した",
+    "④ かなり悪化した",
+    "⑤ 休息が必要"
+)
 private val ShortWorkTimeChoices = listOf("1時間以内", "2時間以内", "3時間以内", "4時間以内")
 private val SocialRehabilitationDetailedRecordLevels = setOf("レベル3-A", "レベル3-B", "レベル4", "レベル5", "レベル6")
 private const val SocialRehabilitationLevel3TransitNextCriteria = "□ 公共交通機関を安全に利用できた\n\n□ 予定どおり帰宅できた\n\n□ 翌日に大きな悪化がなかった\n\n□ 活動後も回復できた\n\nすべてを確認できたら、次の段階へ進むことを考えましょう。"
